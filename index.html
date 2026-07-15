@@ -403,60 +403,6 @@ function initAcceso(){
   });
 }
 /* ==================================================================== */
-/* ---------- ICONS ---------- */ CONTROL DE ACCESO (Supabase Auth) ==================
-Login con email + contraseña usando Supabase Auth.
-El rol de cada usuario se guarda en el metadato 'role' de auth.users:
-  - role: 'admin'   -> ve TODA la app
-  - role: 'lectura' -> SOLO ve la pestaña Compras, sin poder editar
-La autorización real la aplican las políticas RLS en Supabase; esto
-solo controla qué ve la interfaz. */
-let USER_ROLE = null; // 'lectura' | 'admin'
-const TABS_LECTURA = ['compras'];
-function doLogin(){
-  const email=(document.getElementById('lockEmail').value||'').trim();
-  const p=(document.getElementById('lockPass').value||'').trim();
-  const err=document.getElementById('lockErr');
-  if(!email||!p){err.textContent='Introduce email y contraseña.';return;}
-  err.textContent='Comprobando...';
-  SB.auth.signInWithPassword({email,password:p}).then(({data,error})=>{
-    if(error||!data.session){err.textContent='Email o contraseña incorrectos.';return;}
-    const role=(data.user.user_metadata&&data.user.user_metadata.role)||null;
-    if(role!=='admin'&&role!=='lectura'){err.textContent='Tu usuario no tiene un rol asignado. Contacta con administración.';SB.auth.signOut();return;}
-    aplicarAcceso(role);
-  });
-}
-function cerrarSesion(){SB.auth.signOut().then(()=>location.reload());}
-// aplica el rol: oculta pantalla de acceso y filtra el menú según permisos
-function aplicarAcceso(role){
-  USER_ROLE=role;
-  const lock=document.getElementById('lockScreen');if(lock)lock.style.display='none';
-  const permitido=role==='admin'?null:TABS_LECTURA;   // null = todas
-  document.querySelectorAll('.navitem').forEach(n=>{
-    const t=n.dataset.tab;
-    n.style.display=(permitido&&!permitido.includes(t))?'none':'';
-  });
-  const foot=document.querySelector('.side-foot');
-  if(foot&&!document.getElementById('logoutBtn')){
-    const b=document.createElement('div');b.id='logoutBtn';
-    b.style.cssText='margin-top:10px;cursor:pointer;color:#c8a24a;font-weight:600';
-    b.textContent=(role==='admin'?'Acceso total':'Solo lectura')+' · Cerrar sesión';
-    b.onclick=cerrarSesion;foot.appendChild(b);
-  }
-  const primera=(permitido&&permitido.length)?permitido[0]:'inicio';
-  if(permitido){render(primera);window.scrollTo(0,0);}
-}
-// comprueba, al arrancar, si ya hay sesión guardada (Supabase Auth persiste la sesión)
-function initAcceso(){
-  SB.auth.getSession().then(({data})=>{
-    const session=data&&data.session;
-    if(session&&session.user){
-      const role=(session.user.user_metadata&&session.user.user_metadata.role)||null;
-      if(role==='admin'||role==='lectura'){aplicarAcceso(role);return;}
-    }
-    const li=document.getElementById('lockEmail');if(li)li.focus();
-  });
-}
-/* ==================================================================== */
 /* ---------- ICONS ---------- */
 function ic(n){const p={
  home:'<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
